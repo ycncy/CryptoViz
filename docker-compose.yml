@@ -1,0 +1,7 @@
+version: "3.9"
+
+services:
+  scraper-scheduler:
+    command: python scheduled.py
+    build:
+      context: ./scraper
