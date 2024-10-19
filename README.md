@@ -11,7 +11,7 @@ Le but du projet est de concevoir une pipeline en temps réel permettant de scra
 
 ### Diagramme d'Architecture
 
-![Diagramme](https://imgur.com/a/k9XjeVR.jpeg)
+![Diagramme](public/diagramme.jpg)
 
 ### Description de la pipeline
 
