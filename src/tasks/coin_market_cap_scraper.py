@@ -1,5 +1,7 @@
 from typing import List
 import requests
+
+from config.logging import logger
 from src.models.coin_market_cap_api import CryptoCurrencyData
 from src.models.source import Source
 from src.tasks.base_task import BaseTask
@@ -11,6 +13,7 @@ class CoinMarketCapScraper(BaseTask):
     def scrap_data(
         self,
     ) -> List[CryptoCurrencyData]:
+        logger.info("Scraping coinmarketcap data")
         params = {"limit": self.limit, "start": 1}
         route = f"{self.source_url}/data-api/v3/cryptocurrency/listing"
         response = requests.get(url=route, params=params)
@@ -32,3 +35,5 @@ class CoinMarketCapScraper(BaseTask):
             source=Source.COIN_MARKET_CAP_API,
             data=[raw_data.to_dict() for raw_data in scraped_data],
         )
+
+        logger.info("Data forwarded successfully to Kafka topic")

@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Dict
 
-from src.kafka_wrapper.message import KafkaMessage
-from src.kafka_wrapper.producer import Producer
+from src.kafka.message import KafkaMessage
+from src.kafka.producer import Producer
 from src.models.source import Source
 
 
@@ -28,5 +28,5 @@ class BaseTask(ABC):
         self.kafka_producer.send_message(topic=self.kafka_topic, message=kafka_message)
 
     @abstractmethod
-    def run_task(cls) -> Dict:
+    def run_task(cls) -> None:
         raise NotImplementedError

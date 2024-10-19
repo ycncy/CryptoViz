@@ -4,7 +4,7 @@ from typing import List, Optional, Any
 
 from kafka import KafkaProducer
 
-from src.kafka_wrapper.message import KafkaMessage
+from src.kafka.message import KafkaMessage
 
 
 @dataclass

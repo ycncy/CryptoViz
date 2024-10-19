@@ -1,32 +1,51 @@
 version: '3.9'
 
 services:
+  timescale-db:
+    image: timescale/timescaledb:latest-pg17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   zookeeper:
     image: bitnami/zookeeper:latest
-    container_name: zookeeper
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
     ports:
       - "2181:2181"
-
+    restart: always
   kafka:
     image: bitnami/kafka:latest
-    container_name: kafka
     environment:
       - KAFKA_BROKER_ID=1
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=yes
       - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${KAFKA_HOST}
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
       - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
     ports:
       - "9092:9092"
     depends_on:
       - zookeeper
+    restart: always
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--list", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
     ports:
       - "8080:8080"
     environment:
@@ -36,3 +55,43 @@ services:
       - KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL=PLAINTEXT
     depends_on:
       - kafka
+
+  scheduler:
+    build:
+      context: .
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      KAFKA_HOST: ${KAFKA_HOST}
+      KAFKA_CLIENT_ID: 'scheduler'
+
+    command: python scheduled.py
+    depends_on:
+      kafka:
+        condition: service_healthy
+      timescale-db:
+        condition: service_healthy
+
+  coin-market-cap-api-worker:
+    build:
+      context: .
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      KAFKA_HOST: ${KAFKA_HOST}
+      KAFKA_CLIENT_ID: 'coinmarketcap_api_worker'
+    command: python coin_market_cap_api_worker.py
+    depends_on:
+      kafka:
+        condition: service_healthy
+      timescale-db:
+        condition: service_healthy
+
+volumes:
+  timescale_data:
