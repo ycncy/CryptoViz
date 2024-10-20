@@ -81,3 +81,10 @@ Le but du projet est de concevoir une pipeline en temps réel permettant de scra
 └── requirements.txt # Dépendances Python
 
 ```
+
+## Libraries utilisées
+
+- `kafka-python` : Pour gérer les intéractions avec Kafka.
+- `SQLAlchemy` : ORM SQL pour python.
+- `APScheduler` : Pour gérer l'orchestration des tâches.
+- `pre-commit` : Pour le formatage du code.
