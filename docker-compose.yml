@@ -56,6 +56,16 @@ services:
     depends_on:
       - kafka
 
+  grafana:
+    image: grafana/grafana-enterprise
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - grafana-conf:/etc/grafana
+
   scheduler:
     build:
       context: .
@@ -95,3 +105,5 @@ services:
 
 volumes:
   timescale_data:
+  grafana-data:
+  grafana-conf:
