@@ -79,7 +79,7 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=Host(`grafana..msc-projects.me`)"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.msc-projects.me`)"
       - "traefik.http.services.grafana.loadbalancer.server.port=8080"
     volumes:
       - grafana-data:/var/lib/grafana
