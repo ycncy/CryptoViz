@@ -1,6 +1,21 @@
 version: '3.9'
 
 services:
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=yacinetalhaoui13@gmail.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./letsencrypt:/letsencrypt"
   timescale-db:
     image: timescale/timescaledb:latest-pg17
     environment:
@@ -46,8 +61,10 @@ services:
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
-    ports:
-      - "8080:8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kafka-ui.rule=Host(`kafka-ui.localhost`)"
+      - "traefik.http.services.kafka-ui.loadbalancer.server.port=8080"
     environment:
       - KAFKA_CLUSTERS_0_NAME=local
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
@@ -60,8 +77,10 @@ services:
     image: grafana/grafana-enterprise
     container_name: grafana
     restart: unless-stopped
-    ports:
-      - '3000:3000'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kafka-ui.rule=Host(`grafana.localhost`)"
+      - "traefik.http.services.kafka-ui.loadbalancer.server.port=8080"
     volumes:
       - grafana-data:/var/lib/grafana
       - grafana-conf:/etc/grafana
