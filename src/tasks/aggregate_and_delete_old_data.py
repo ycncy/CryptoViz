@@ -6,14 +6,15 @@ from config.logging import logger
 def aggregate_and_delete_old_data(session):
     try:
         aggregate_query = """
-        INSERT INTO crypto_data_history (record_datetime, name, symbol, price, volume, market_cap)
+        INSERT INTO crypto_data_history (record_datetime, name, symbol, price, volume, market_cap, source)
         SELECT
             time_bucket('1 hour', timestamp) + interval '1 hour' AS hour_bucket,
             name,
             currency AS symbol,
             price,
             volume_24 AS volume,
-            market_cap
+            market_cap,
+            source
         FROM (
                  SELECT
                      DISTINCT ON (time_bucket('1 hour', timestamp), currency)
@@ -22,7 +23,8 @@ def aggregate_and_delete_old_data(session):
                      currency,
                      price,
                      volume_24,
-                     market_cap
+                     market_cap,
+                     source
                  FROM
                      raw_crypto_data
                  WHERE
