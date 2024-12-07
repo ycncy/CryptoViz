@@ -5,6 +5,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from dotenv import load_dotenv
+from datetime import datetime
 
 from config.logging import logger
 from src.database.postgres import PostgresDB
