@@ -61,7 +61,8 @@ if __name__ == "__main__":
     scheduler.add_job(
         aggregate_and_delete_old_data,
         args=[postgres_connection.session],
-        trigger=CronTrigger(hour=00, minute=5, timezone=pytz.UTC),
+        trigger=IntervalTrigger(weeks=2),
+        next_run_time=datetime.datetime.utcnow().replace(minute=5, second=0, microsecond=0),
     )
 
     scheduler.start()
