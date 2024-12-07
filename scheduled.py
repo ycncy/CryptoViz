@@ -63,7 +63,7 @@ if __name__ == "__main__":
         aggregate_and_delete_old_data,
         args=[postgres_connection.session],
         trigger=IntervalTrigger(weeks=2),
-        next_run_time=datetime.datetime.utcnow().replace(minute=5, second=0, microsecond=0),
+        next_run_time=datetime.utcnow().replace(minute=5, second=0, microsecond=0),
     )
 
     scheduler.start()
