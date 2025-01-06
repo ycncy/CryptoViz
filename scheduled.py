@@ -5,11 +5,10 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from dotenv import load_dotenv
-from datetime import datetime
 
 from config.logging import logger
 from src.database.postgres import PostgresDB
-from src.tasks.aggregate_and_delete_old_data import aggregate_and_delete_old_data
+from src.tasks.aggregate_and_delete_old_data import delete_old_data, aggregate_old_data
 from src.kafka.producer import Producer
 from src.tasks.coin_market_cap_scraper import CoinMarketCapScraper
 
@@ -60,10 +59,16 @@ if __name__ == "__main__":
     )
 
     scheduler.add_job(
-        aggregate_and_delete_old_data,
+        aggregate_old_data,
         args=[postgres_connection.session],
-        trigger=IntervalTrigger(weeks=2),
-        next_run_time=datetime.utcnow().replace(minute=5, second=0, microsecond=0),
+        trigger=CronTrigger(hour=0, minute=5, timezone=pytz.UTC),
     )
 
+    scheduler.add_job(
+        delete_old_data,
+        args=[postgres_connection.session],
+        trigger=CronTrigger(hour=0, minute=5, timezone=pytz.UTC),
+    )
+
+    logger.info("Starting the scheduler...")
     scheduler.start()

@@ -3,7 +3,7 @@ from sqlalchemy import text
 from config.logging import logger
 
 
-def aggregate_and_delete_old_data(session):
+def aggregate_old_data(session):
     try:
         aggregate_query = """
         INSERT INTO crypto_data_history (record_datetime, name, symbol, price, volume, market_cap, source)
@@ -37,28 +37,35 @@ def aggregate_and_delete_old_data(session):
         """
 
         session.execute(text(aggregate_query))
+        session.commit()
 
-        rows_deleted = 1
-        while rows_deleted > 0:
-            delete_query = """
-            DELETE FROM raw_crypto_data
-            WHERE timestamp >= NOW() - INTERVAL '1 day'
-            """
-
-            result = session.execute(text(delete_query))
-            rows_deleted = result.rowcount
-
-            session.commit()
-
-            logger.info(f"Deleted {rows_deleted} rows in this batch.")
-
-        logger.info("All old data deleted successfully.")
-
-        logger.info("Data aggregated and old data deleted successfully.")
+        logger.info("Data aggregated successfully for daily intervals.")
 
     except Exception as e:
         session.rollback()
         logger.info(f"Error executing job: {e}")
+
+    finally:
+        session.close()
+
+
+def delete_old_data(session):
+    try:
+        delete_query = """
+        DELETE FROM raw_crypto_data
+        WHERE timestamp < NOW() - INTERVAL '14 day'
+        """
+
+        result = session.execute(text(delete_query))
+        rows_deleted = result.rowcount
+
+        session.commit()
+
+        logger.info(f"Deleted {rows_deleted} rows older than 14 days.")
+
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error deleting old data: {e}")
 
     finally:
         session.close()
