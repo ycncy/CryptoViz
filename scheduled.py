@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
     scheduler.add_job(
         kraken_task.run_task,
-        trigger=IntervalTrigger(minutes=0, timezone=pytz.UTC),
+        trigger=IntervalTrigger(minutes=2, timezone=pytz.UTC),
     )
 
     scheduler.add_job(
