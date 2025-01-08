@@ -122,6 +122,25 @@ services:
       timescale-db:
         condition: service_healthy
 
+  kraken-api-worker:
+    build:
+      context: .
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      KAFKA_HOST: ${KAFKA_HOST}
+      KAFKA_CLIENT_ID: 'kraken_api_worker'
+    command: python kraken_api_worker.py
+    depends_on:
+      kafka:
+        condition: service_healthy
+      timescale-db:
+        condition: service_healthy
+
+
 volumes:
   timescale_data:
   grafana-data:

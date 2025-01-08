@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=yacinetalhaoui13@gmail.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./letsencrypt:/letsencrypt"
+  emqx:
+    image: emqx/emqx:latest
+    container_name: emqx_broker
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.emqx-ui.rule=Host(`mosquitto-ui.gaia-dev.msc-projects.me`)"
+      - "traefik.http.routers.emqx-ui.entrypoints=websecure"
+      - "traefik.http.routers.emqx-ui.tls.certresolver=myresolver"
+      - "traefik.http.services.emqx-ui.loadbalancer.server.port=8081"
+      - "traefik.tcp.routers.emqx-mqtt.rule=HostSNI(`mosquitto.gaia-dev.msc-projects.me`)"
+      - "traefik.tcp.routers.emqx-mqtt.entrypoints=websecure"
+      - "traefik.tcp.routers.emqx-mqtt.tls.certresolver=myresolver"
+      - "traefik.tcp.services.emqx-mqtt.loadbalancer.server.port=1883"
+    environment:
+      - EMQX_ALLOW_ANONYMOUS=true

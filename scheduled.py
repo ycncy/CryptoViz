@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 from config.logging import logger
 from src.database.postgres import PostgresDB
+from src.tasks.OHLC_kraken_scraper import OHLCKrakenScraper
 from src.tasks.aggregate_and_delete_old_data import delete_old_data, aggregate_old_data
 from src.kafka.producer import Producer
 from src.tasks.coin_market_cap_scraper import CoinMarketCapScraper
@@ -51,10 +52,21 @@ if __name__ == "__main__":
         kafka_topic="raw_data.coin_market_cap.api",
     )
 
+    kraken_task = OHLCKrakenScraper(
+        source_url="https://api.kraken.com/0/public/OHLC",
+        kafka_producer=kafka_producer,
+        kafka_topic="raw_data.ohlc.kraken.api",
+    )
+
     scheduler = BlockingScheduler()
 
     scheduler.add_job(
         coin_market_cap_task.run_task,
+        trigger=IntervalTrigger(minutes=2, timezone=pytz.UTC),
+    )
+
+    scheduler.add_job(
+        kraken_task.run_task,
         trigger=IntervalTrigger(minutes=2, timezone=pytz.UTC),
     )
 
