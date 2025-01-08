@@ -11,3 +11,4 @@ COPY config config/
 
 COPY scheduled.py ./
 COPY coin_market_cap_api_worker.py ./
+COPY kraken_api_worker.py ./
