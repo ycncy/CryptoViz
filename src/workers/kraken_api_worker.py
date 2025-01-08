@@ -22,7 +22,7 @@ class KrakenApiWorker(KafkaWorker):
 
         rows_to_insert = [
             {
-                "record_datetime": raw_data["record_datetime"],
+                "record_datetime": data["record_datetime"],
                 "symbol": data["symbol"],
                 "name": data["name"],
                 "open": data["open"],
