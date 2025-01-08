@@ -45,9 +45,10 @@ class OHLCKrakenScraper(BaseTask):
                     raise Exception("Erreur")
                 else:
                     raw_data = response.json()["result"]
-                    cryptocurrencies_data.append(
-                        CryptoCurrencyOHLC.from_json(raw_data, name=cryptocurrency.name, symbol=cryptocurrency.currency)
-                    )
+                    if raw_data:
+                        cryptocurrencies_data.append(
+                            CryptoCurrencyOHLC.from_json(raw_data, name=cryptocurrency.name, symbol=cryptocurrency.currency)
+                        )
 
             return cryptocurrencies_data
 
