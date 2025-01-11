@@ -5,6 +5,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from dotenv import load_dotenv
+from prometheus_client import start_http_server
 
 from config.logging import logger
 from src.database.postgres import PostgresDB
@@ -39,6 +40,8 @@ def init_kafka_producer() -> Producer:
 
 if __name__ == "__main__":
     logger.info("Initializing scheduler...")
+
+    start_http_server(8000)
 
     kafka_producer = init_kafka_producer()
     kafka_producer.connect()

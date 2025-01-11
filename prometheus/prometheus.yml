@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "scheduler"
+    static_configs:
+      - targets: ["scheduler:8000"]
+
+  - job_name: "coin_market_cap_api_worker"
+    static_configs:
+      - targets: ["coin-market-cap-api-worker:8000"]
+
+  - job_name: "kraken_api_worker"
+    static_configs:
+      - targets: ["kraken-api-worker:8000"]
