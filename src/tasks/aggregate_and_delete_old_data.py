@@ -28,30 +28,62 @@ def aggregate_old_data(session):
                  FROM
                      raw_crypto_data
                  WHERE
-                     timestamp >= NOW() - INTERVAL '1 day'
+                     timestamp >= NOW() - INTERVAL '9 day'
                  ORDER BY
                      time_bucket('1 hour', timestamp), currency, timestamp DESC
              ) AS subquery
         ORDER BY
             hour_bucket;
 
+        WITH aggregated_data AS (
+            SELECT
+                time_bucket('1 hour', record_datetime) + interval '1 hour' AS hour_bucket,
+                name,
+                symbol,
+                MIN(record_datetime) AS first_time,
+                MAX(record_datetime) AS last_time,
+                MAX(high) AS high,
+                MIN(low) AS low
+            FROM
+                raw_ohlc_data
+            WHERE
+                record_datetime >= NOW() - INTERVAL '9 day'
+            GROUP BY
+                hour_bucket, name, symbol
+        ),
+        first_last_data AS (
+            SELECT DISTINCT ON (time_bucket('1 hour', record_datetime), name, symbol)
+                time_bucket('1 hour', record_datetime) + interval '1 hour' AS hour_bucket,
+                name,
+                symbol,
+                record_datetime,
+                open,
+                close
+            FROM
+                raw_ohlc_data
+            WHERE
+                record_datetime >= NOW() - INTERVAL '9 day'
+            ORDER BY
+                time_bucket('1 hour', record_datetime), name, symbol, record_datetime ASC
+        )
         INSERT INTO ohlc_history (record_datetime, name, symbol, open, high, low, close)
         SELECT
-            time_bucket('1 hour', timestamp) + interval '1 hour' AS hour_bucket,
-            name,
-            currency AS symbol,
-            FIRST(price) WITHIN GROUP (ORDER BY timestamp ASC) AS open,
-            MAX(price) AS high,
-            MIN(price) AS low,
-            LAST(price) WITHIN GROUP (ORDER BY timestamp ASC) AS close
+            agg.hour_bucket,
+            agg.name,
+            agg.symbol,
+            COALESCE(fl.open, 0) AS open,
+            agg.high,
+            agg.low,
+            COALESCE(fl.close, 0) AS close
         FROM
-            raw_crypto_data
-        WHERE
-            timestamp >= NOW() - INTERVAL '1 day'
-        GROUP BY
-            hour_bucket, name, currency
+            aggregated_data agg
+        LEFT JOIN first_last_data fl
+        ON
+            agg.name = fl.name AND
+            agg.symbol = fl.symbol AND
+            (fl.record_datetime = agg.first_time OR fl.record_datetime = agg.last_time)
         ORDER BY
-            hour_bucket, name, currency;
+            agg.hour_bucket, agg.name, agg.symbol;
         """
 
         session.execute(text(aggregate_query))
@@ -71,10 +103,10 @@ def delete_old_data(session):
     try:
         delete_query = """
         DELETE FROM raw_crypto_data
-        WHERE timestamp < NOW() - INTERVAL '14 day'
+        WHERE timestamp < NOW() - INTERVAL '9 day';
         
         DELETE FROM raw_ohlc_data
-        WHERE timestamp < NOW() - INTERVAL '14 day'
+        WHERE record_datetime < NOW() - INTERVAL '9 day'
         """
 
         result = session.execute(text(delete_query))

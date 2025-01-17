@@ -46,14 +46,10 @@ class CoinMarketCapScraper(BaseTask):
     ) -> None:
         scraped_data = self.scrap_data()
 
-        start_time = time.time()
-
         self.send_data_to_kafka_topic(
             source=Source.COIN_MARKET_CAP_API,
             data=[raw_data.to_dict() for raw_data in scraped_data],
         )
-
-        end_time = time.time()
 
         KAFKA_MESSAGES_SENT.inc(len(scraped_data))
 
