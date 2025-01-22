@@ -28,7 +28,7 @@ def aggregate_old_data(session):
                  FROM
                      raw_crypto_data
                  WHERE
-                     timestamp >= NOW() - INTERVAL '9 day'
+                     timestamp >= NOW() - INTERVAL '1 day'
                  ORDER BY
                      time_bucket('1 hour', timestamp), currency, timestamp DESC
              ) AS subquery
@@ -47,7 +47,7 @@ def aggregate_old_data(session):
             FROM
                 raw_ohlc_data
             WHERE
-                record_datetime >= NOW() - INTERVAL '9 day'
+                record_datetime >= NOW() - INTERVAL '1 day'
             GROUP BY
                 hour_bucket, name, symbol
         ),
@@ -62,7 +62,7 @@ def aggregate_old_data(session):
             FROM
                 raw_ohlc_data
             WHERE
-                record_datetime >= NOW() - INTERVAL '9 day'
+                record_datetime >= NOW() - INTERVAL '1 day'
             ORDER BY
                 time_bucket('1 hour', record_datetime), name, symbol, record_datetime ASC
         )
@@ -103,10 +103,10 @@ def delete_old_data(session):
     try:
         delete_query = """
         DELETE FROM raw_crypto_data
-        WHERE timestamp < NOW() - INTERVAL '9 day';
+        WHERE timestamp < NOW() - INTERVAL '14 day';
         
         DELETE FROM raw_ohlc_data
-        WHERE record_datetime < NOW() - INTERVAL '9 day'
+        WHERE record_datetime < NOW() - INTERVAL '14 day'
         """
 
         result = session.execute(text(delete_query))
