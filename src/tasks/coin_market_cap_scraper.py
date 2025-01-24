@@ -11,9 +11,8 @@ REQUEST_COUNT = Counter("coinmarketcap_requests_total", "Total number of request
 FAILED_REQUESTS = Counter("coinmarketcap_failed_requests_total", "Total number of failed requests")
 SCRAPING_DURATION = Summary("coinmarketcap_scraping_duration_seconds", "Time taken to scrape data from CoinMarketCap API")
 PROCESSING_DURATION = Histogram("coinmarketcap_processing_duration_seconds", "Time taken to process and send data to Kafka")
-FAILED_REQUESTS_GAUGE = Gauge("coinmarketcap_failed_requests_gauge", "Current failed requests (resets after logging)")
-SENT_DATA_SIZE_GAUGE = Gauge("coinmarketcap_sent_data_size_bytes", "Size of data sent to Kafka during the last execution")
-SCRAPED_ITEMS_COUNT_GAUGE = Gauge("coinmarketcap_scraped_items_count", "Number of items scraped during the last execution")
+SENT_DATA_SIZE_COUNTER = Counter("coinmarketcap_sent_data_size_bytes_total", "Total size of data sent to Kafka over time")
+SCRAPED_DATA_SIZE_COUNTER = Counter("coinmarketcap_scraped_data_size_bytes_total", "Total size of data scraped over time")
 
 class CoinMarketCapScraper(BaseTask):
     limit: int = 25
@@ -29,12 +28,10 @@ class CoinMarketCapScraper(BaseTask):
         response = requests.get(url=route, params=params)
         if response.status_code != 200:
             FAILED_REQUESTS.inc()
-            FAILED_REQUESTS_GAUGE.set(1)
             raise Exception("Erreur")
         else:
-            FAILED_REQUESTS_GAUGE.set(0)
             raw_data = response.json()["data"]["cryptoCurrencyList"]
-            SCRAPED_ITEMS_COUNT_GAUGE.set(len(raw_data))
+            SCRAPED_DATA_SIZE_COUNTER.inc(len(raw_data))
             return [
                 CryptoCurrencyData.from_json(crypto_currency_raw_data)
                 for crypto_currency_raw_data in raw_data
@@ -47,7 +44,7 @@ class CoinMarketCapScraper(BaseTask):
 
         data_size = sum(len(str(data)) for data in serialized_data)
 
-        SENT_DATA_SIZE_GAUGE.set(data_size)
+        SENT_DATA_SIZE_COUNTER.inc(data_size)
 
         self.send_data_to_kafka_topic(
             source=Source.COIN_MARKET_CAP_API,

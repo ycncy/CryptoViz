@@ -15,9 +15,8 @@ REQUEST_COUNT = Counter("kraken_requests_total", "Total number of requests to Kr
 FAILED_REQUESTS = Counter("kraken_failed_requests_total", "Total number of failed requests to Kraken API")
 SCRAPING_DURATION = Summary("kraken_scraping_duration_seconds", "Time taken to scrape data from Kraken API")
 PROCESSING_DURATION = Histogram("kraken_processing_duration_seconds", "Time taken to process and send data to Kafka")
-FAILED_REQUESTS_GAUGE = Gauge("kraken_failed_requests_gauge", "Current failed requests (resets after logging)")
-SENT_DATA_SIZE_GAUGE = Gauge("kraken_sent_data_size_bytes", "Size of data sent to Kafka during the last execution")
-SCRAPED_ITEMS_COUNT_GAUGE = Gauge("kraken_scraped_items_count", "Number of items scraped during the last execution")
+SENT_DATA_SIZE_COUNTER = Counter("kraken_sent_data_size_bytes", "Size of data sent to Kafka during the last execution")
+SCRAPED_DATA_SIZE_COUNTER = Counter("kraken_scraped_items_count", "Number of items scraped during the last execution")
 
 class OHLCKrakenScraper(BaseTask):
     limit: int = 25
@@ -43,7 +42,6 @@ class OHLCKrakenScraper(BaseTask):
             ).distinct(CryptoCurrencyRealtimeHistory.currency).all()
 
             cryptocurrencies_data = []
-            failed_requests = 0
 
             for cryptocurrency in cryptocurrencies:
                 params = {
@@ -52,7 +50,6 @@ class OHLCKrakenScraper(BaseTask):
                 response = requests.get(url=self.source_url, params=params)
                 if response.status_code != 200:
                     FAILED_REQUESTS.inc()
-                    failed_requests += 1
                     logger.error(f"Failed to fetch data for {cryptocurrency.currency}")
                     continue
                 else:
@@ -62,8 +59,7 @@ class OHLCKrakenScraper(BaseTask):
                             CryptoCurrencyOHLC.from_json(raw_data["result"], name=cryptocurrency.name, symbol=cryptocurrency.currency)
                         )
 
-            FAILED_REQUESTS_GAUGE.set(failed_requests)
-            SCRAPED_ITEMS_COUNT_GAUGE.set(len(cryptocurrencies_data))
+            SCRAPED_DATA_SIZE_COUNTER.inc(len(cryptocurrencies_data))
             return cryptocurrencies_data
 
     @PROCESSING_DURATION.time()
@@ -72,7 +68,7 @@ class OHLCKrakenScraper(BaseTask):
         serialized_data = [raw_data.to_dict() for raw_data in scraped_data]
 
         data_size = sum(len(str(data)) for data in serialized_data)
-        SENT_DATA_SIZE_GAUGE.set(data_size)
+        SENT_DATA_SIZE_COUNTER.inc(data_size)
 
         self.send_data_to_kafka_topic(
             source=Source.KRAKEN_API,
